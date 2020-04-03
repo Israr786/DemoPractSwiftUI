@@ -25,9 +25,8 @@ class NetworkManager: ObservableObject {
             objectWillChange.send(self)
         }
     }
-    
     init() {
-         let urlString = "https://api.github.com/users?since=135"
+        let urlString = "https://api.github.com/users?since=135"
         guard let url = URL(string: urlString) else { return }
         URLSession.shared.dataTask(with: url) { (data, _, _) in
             guard let data = data else { return }
@@ -38,7 +37,6 @@ class NetworkManager: ObservableObject {
             }
         }.resume()
     }
-    
 }
 
 struct URLImage: View {
@@ -66,24 +64,33 @@ struct URLImage: View {
 struct ContentView: View {
     
     @ObservedObject var networkManager = NetworkManager()
+    @State var searchText = ""
     
     var body: some View {
-       
         NavigationView {
-            List(networkManager.users, id: \.id) {
-                UserRowView(user: $0)
-            }
-        }.navigationBarTitle(Text("Courses"))
+            VStack {
+                SearchBar(text: $searchText)
+                List {
+                    ForEach(networkManager.users.filter({ (user) -> Bool in
+                        searchText.isEmpty ? true : user.login.localizedCaseInsensitiveContains(searchText)
+                    }), id: \.id) { user in
+                        NavigationLink(destination:
+                        UserDetail(user: user, networkManager: self.networkManager)){
+                        UserRowView(user: user)
+                        }
+                    }
+                }
+            }.navigationBarTitle(Text("GitHub Searcher"))
+        }
     }
 }
 
 struct UserRowView: View {
     let user: User
-    
     var body: some View {
         HStack {
             URLImage(url: user.avatar_url)
-                .frame(width: 100, height: 60)
+                .frame(width: 100, height: 80)
                 .padding(.leading, 10)
                 .clipped()
                 .cornerRadius(10)
